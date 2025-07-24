@@ -3,7 +3,7 @@
 
 이 프로젝트는 GitHub API를 활용하여 사용자의 프로필, 저장소, 프로젝트 정보를 시각적으로 보여주는 대화형 웹 대시보드입니다. 단일 사용자 정보를 깊이 있게 분석하거나, 두 사용자의 데이터를 나란히 비교하여 역량을 한눈에 파악할 수 있습니다.
 
-실행주소1 : https://github-board.vercel.app/
+실행주소1 : https://github-board-swart.vercel.app/
 
 실행주소2 : https://dev-canvas-pi.vercel.app/
 
