@@ -1,0 +1,6 @@
+{
+  "name": "GitHub 대시보드",
+  "description": "GitHub API를 사용하여 GitHub 사용자의 프로필, 저장소 및 프로젝트를 표시하는 시각적 대시보드입니다.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

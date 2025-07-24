@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- SVG 파비콘 -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- PNG 파비콘 -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <!-- ICO 파비콘 (주로 오래된 브라우저 호환성을 위해) -->
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              gray: {
+                900: '#111827',
+                800: '#1F2937',
+                700: '#374151',
+                600: '#4B5563',
+                500: '#6B7280',
+                400: '#9CA3AF',
+                300: '#D1D5DB',
+                200: '#E5E7EB',
+                100: '#F3F4F6',
+                50: '#F9FAFB'
+              }
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "recharts": "https://esm.sh/recharts@^3.1.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-gray-900 text-gray-100">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
