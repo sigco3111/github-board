@@ -232,72 +232,42 @@ const GitHubTokenModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave:
 // --- Navigation Component ---
 const Navigation: React.FC<{ onOpenTokenModal: () => void }> = ({ onOpenTokenModal }) => {
     const location = useLocation();
-    const [isHelpOpen, setIsHelpOpen] = useState(false);
     
     return (
         <nav className="flex justify-between items-center border-b border-gray-700 mb-6 px-4" aria-label="Main navigation">
             <div className="flex">
-            <Link
-                to="/"
-                className={`px-6 py-3 text-lg font-medium transition-colors duration-200 ${
-                    location.pathname === '/'
-                        ? 'border-b-2 border-sky-500 text-sky-400'
-                        : 'text-gray-400 hover:text-gray-200'
-                }`}
-            >
-                홈
-            </Link>
-            <Link
-                to="/compare"
-                className={`px-6 py-3 text-lg font-medium transition-colors duration-200 flex items-center gap-2 ${
-                    location.pathname === '/compare'
-                        ? 'border-b-2 border-sky-500 text-sky-400'
-                        : 'text-gray-400 hover:text-gray-200'
-                }`}
-            >
-                <span role="img" aria-hidden="true">👥</span>
-                <span>사용자 비교</span>
-            </Link>
+                <Link
+                    to="/"
+                    className={`px-6 py-3 text-lg font-medium transition-colors duration-200 ${
+                        location.pathname === '/'
+                            ? 'border-b-2 border-sky-500 text-sky-400'
+                            : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                >
+                    홈
+                </Link>
+                <Link
+                    to="/compare"
+                    className={`px-6 py-3 text-lg font-medium transition-colors duration-200 flex items-center gap-2 ${
+                        location.pathname === '/compare'
+                            ? 'border-b-2 border-sky-500 text-sky-400'
+                            : 'text-gray-400 hover:text-gray-200'
+                    }`}
+                >
+                    <span role="img" aria-hidden="true">👥</span>
+                    <span>사용자 비교</span>
+                </Link>
             </div>
             
-            <div className="flex items-center gap-3">
-                {/* 도움말 및 설정 버튼 */}
-                <div className="relative">
-                    <button 
-                        onClick={() => setIsHelpOpen(!isHelpOpen)}
-                        className="flex items-center gap-1 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-md text-sm"
-                        aria-label="도움말 및 설정"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        도움말
-                    </button>
-                    
-                    {isHelpOpen && (
-                        <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-md shadow-lg z-50">
-                            <div className="p-4">
-                                <h3 className="text-gray-200 font-medium mb-2">GitHub API 사용량</h3>
-                                <p className="text-gray-400 text-sm mb-3">
-                                    GitHub API는 인증 없이 시간당 60회, 토큰 인증 시 5,000회의 요청이 가능합니다.
-                                </p>
-                                <button 
-                                    onClick={() => {
-                                        setIsHelpOpen(false);
-                                        onOpenTokenModal();
-                                    }}
-                                    className="w-full flex items-center justify-center gap-1 px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-md text-sm"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
-                                    API 토큰 설정
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+            <button 
+                onClick={onOpenTokenModal}
+                className="flex items-center gap-1 px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-md text-sm"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                API 토큰 설정
+            </button>
         </nav>
     );
 };
@@ -851,7 +821,7 @@ const HomePage: React.FC<{ onOpenTokenModal?: () => void }> = ({ onOpenTokenModa
                     </h1>
                 </header>
                 
-
+                {onOpenTokenModal && <Navigation onOpenTokenModal={onOpenTokenModal} />}
 
                 <div className="mb-6">
                     <form onSubmit={handleSearch} className="max-w-xl mx-auto flex">
@@ -995,9 +965,9 @@ const Dashboard: React.FC<{ user: GitHubUser; repos: GitHubRepo[]; projects: Git
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-5 w-5 bg-green-500"></span>
                             </span>
-                </div>
-            </div>
-
+                        </div>
+                    </div>
+                    
                     {/* 사용자 정보 */}
                     <div className="md:ml-8 mt-6 md:mt-0 text-center md:text-left flex-grow">
                         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -1204,7 +1174,7 @@ const Dashboard: React.FC<{ user: GitHubUser; repos: GitHubRepo[]; projects: Git
                         
                         {/* 차트 섹션 */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
-                        <div>
+                            <div>
                                 <h3 className="text-2xl font-semibold mb-4 text-gray-200 flex items-center">
                                     <svg className="w-6 h-6 mr-2 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
@@ -1212,10 +1182,10 @@ const Dashboard: React.FC<{ user: GitHubUser; repos: GitHubRepo[]; projects: Git
                                     언어 분포
                                 </h3>
                                 <div className="bg-gray-800/80 p-6 rounded-xl shadow-lg h-[400px] flex items-center justify-center backdrop-blur-sm border border-gray-700/50">
-                               <LanguageChart repos={repos} />
+                                   <LanguageChart repos={repos} />
+                                </div>
                             </div>
-                        </div>
-                        <div>
+                            <div>
                                 <h3 className="text-2xl font-semibold mb-4 text-gray-200 flex items-center">
                                     <svg className="w-6 h-6 mr-2 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
@@ -1223,7 +1193,7 @@ const Dashboard: React.FC<{ user: GitHubUser; repos: GitHubRepo[]; projects: Git
                                     인기 저장소 스탯
                                 </h3>
                                 <div className="bg-gray-800/80 p-6 rounded-xl shadow-lg h-[400px] flex items-center justify-center backdrop-blur-sm border border-gray-700/50">
-                               <TopReposChart repos={repos} />
+                                   <TopReposChart repos={repos} />
                                 </div>
                             </div>
                         </div>
@@ -1392,32 +1362,32 @@ const Dashboard: React.FC<{ user: GitHubUser; repos: GitHubRepo[]; projects: Git
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                         </svg>
                                     </div>
-                                <input
-                                    type="text"
+                                    <input
+                                        type="text"
                                         placeholder="저장소 이름 또는 설명으로 검색..."
-                                    value={searchTerm}
+                                        value={searchTerm}
                                         onChange={(e) => {
                                           e.preventDefault();
                                           const value = e.target.value;
                                           setSearchTerm(value);
                                         }}
                                         className="w-full pl-10 pr-4 py-3 bg-gray-700/70 border border-gray-600/70 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent shadow-sm transition-all duration-200"
-                                    aria-label="저장소 검색"
-                                />
-                            </div>
+                                        aria-label="저장소 검색"
+                                    />
+                                </div>
                                <div className="flex gap-3 w-full sm:w-auto flex-col sm:flex-row">
                                     <div className="relative">
                                         <label className="absolute -top-2.5 left-3 inline-block bg-gray-800 px-1 text-xs font-medium text-gray-400">언어</label>
-                                <select
-                                    value={languageFilter}
-                                    onChange={(e) => setLanguageFilter(e.target.value)}
+                                        <select
+                                            value={languageFilter}
+                                            onChange={(e) => setLanguageFilter(e.target.value)}
                                             className="appearance-none h-full pl-3 pr-8 py-2.5 bg-gray-700/70 border border-gray-600/70 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent shadow-sm min-w-[120px]"
-                                    aria-label="언어 필터"
-                                >
-                                    {uniqueLanguages.map(lang => (
-                                        <option key={lang} value={lang}>{lang === 'all' ? '모든 언어' : lang}</option>
-                                    ))}
-                                </select>
+                                            aria-label="언어 필터"
+                                        >
+                                            {uniqueLanguages.map(lang => (
+                                                <option key={lang} value={lang}>{lang === 'all' ? '모든 언어' : lang}</option>
+                                            ))}
+                                        </select>
                                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
@@ -1426,16 +1396,16 @@ const Dashboard: React.FC<{ user: GitHubUser; repos: GitHubRepo[]; projects: Git
                                     </div>
                                     <div className="relative">
                                         <label className="absolute -top-2.5 left-3 inline-block bg-gray-800 px-1 text-xs font-medium text-gray-400">유형</label>
-                                <select
-                                    value={typeFilter}
-                                    onChange={(e) => setTypeFilter(e.target.value as any)}
+                                        <select
+                                            value={typeFilter}
+                                            onChange={(e) => setTypeFilter(e.target.value as any)}
                                             className="appearance-none h-full pl-3 pr-8 py-2.5 bg-gray-700/70 border border-gray-600/70 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent shadow-sm min-w-[120px]"
-                                    aria-label="유형 필터"
-                                >
-                                    <option value="all">모든 유형</option>
-                                    <option value="sources">소스</option>
-                                    <option value="forks">포크</option>
-                                </select>
+                                            aria-label="유형 필터"
+                                        >
+                                            <option value="all">모든 유형</option>
+                                            <option value="sources">소스</option>
+                                            <option value="forks">포크</option>
+                                        </select>
                                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
@@ -1444,22 +1414,22 @@ const Dashboard: React.FC<{ user: GitHubUser; repos: GitHubRepo[]; projects: Git
                                     </div>
                                     <div className="relative">
                                         <label className="absolute -top-2.5 left-3 inline-block bg-gray-800 px-1 text-xs font-medium text-gray-400">정렬</label>
-                                <select
-                                    value={sortKey}
-                                    onChange={(e) => setSortKey(e.target.value as any)}
+                                        <select
+                                            value={sortKey}
+                                            onChange={(e) => setSortKey(e.target.value as any)}
                                             className="appearance-none h-full pl-3 pr-8 py-2.5 bg-gray-700/70 border border-gray-600/70 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent shadow-sm min-w-[150px]"
-                                    aria-label="정렬 기준"
-                                >
-                                    <option value="pushed_at">최신 업데이트 순</option>
-                                    <option value="stargazers_count">별 개수 순</option>
-                                    <option value="name">이름 순</option>
-                                </select>
+                                            aria-label="정렬 기준"
+                                        >
+                                            <option value="pushed_at">최신 업데이트 순</option>
+                                            <option value="stargazers_count">별 개수 순</option>
+                                            <option value="name">이름 순</option>
+                                        </select>
                                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                                             </svg>
-                            </div>
-                        </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1886,8 +1856,6 @@ const ComparisonRadarChart: React.FC<{ userOneData: UserData; userTwoData: UserD
 
 
 const UserComparison: React.FC<{ data: ComparisonResult }> = ({ data }) => {
-    const navigate = useNavigate();
-    
     const renderUserColumn = (userData: UserData | { error: string }) => {
         if ('error' in userData) {
             return (
@@ -1931,20 +1899,6 @@ const UserComparison: React.FC<{ data: ComparisonResult }> = ({ data }) => {
 
     return (
         <div className="mt-8">
-            {/* 뒤로가기 버튼 추가 */}
-            <div className="mb-6">
-                <button 
-                    onClick={() => navigate(-1)} 
-                    // -1은 브라우저 히스토리에서 한 단계 뒤로 이동
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-md transition-colors duration-200"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                    </svg>
-                    <span>이전 검색 결과로 돌아가기</span>
-                </button>
-            </div>
-            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {renderUserColumn(data.userOne)}
                 {renderUserColumn(data.userTwo)}
@@ -1977,7 +1931,6 @@ const UserComparison: React.FC<{ data: ComparisonResult }> = ({ data }) => {
 const UserComparisonPage: React.FC<{ onOpenTokenModal?: () => void }> = ({ onOpenTokenModal }) => {
     const { username1, username2 } = useParams<{ username1?: string; username2?: string }>();
     const navigate = useNavigate();
-    const location = useLocation();
     
     // URL 파라미터가 있으면 사용, 없으면 localStorage의 값 사용
     const [usernameOne, setUsernameOne] = useState<string>(() => username1 || localStorage.getItem('lastComparisonUser1') || '');
@@ -1985,7 +1938,7 @@ const UserComparisonPage: React.FC<{ onOpenTokenModal?: () => void }> = ({ onOpe
     const [comparisonData, setComparisonData] = useState<ComparisonResult | null>(null);
     const [comparisonLoading, setComparisonLoading] = useState(false);
 
-        // 사용자 비교를 수행하는 함수 (API 속도 제한 문제 해결)
+    // 사용자 비교를 수행하는 함수
     const compareUsers = useCallback(async (user1: string, user2: string) => {
         if (!user1 || !user2) return;
         
@@ -1998,113 +1951,25 @@ const UserComparisonPage: React.FC<{ onOpenTokenModal?: () => void }> = ({ onOpe
         } catch (err) {
             console.error("Failed to save comparison users to localStorage", err);
         }
+        
+        const results = await Promise.allSettled([
+            Promise.all([getUser(user1), getRepos(user1)]),
+            Promise.all([getUser(user2), getRepos(user2)])
+        ]);
 
-        // 캐시 키 생성 및 확인
-        const cacheKey = `comparison_${user1}_${user2}`;
-        let useCache = false;
-        let cachedResult = null;
+        const [resultOne, resultTwo] = results;
+
+        const data: ComparisonResult = {
+            userOne: resultOne.status === 'fulfilled' 
+                ? { user: resultOne.value[0], repos: resultOne.value[1] }
+                : { error: `사용자 '${user1}'의 데이터를 불러오는 데 실패했습니다: ${(resultOne.reason as Error).message}` },
+            userTwo: resultTwo.status === 'fulfilled' 
+                ? { user: resultTwo.value[0], repos: resultTwo.value[1] }
+                : { error: `사용자 '${user2}'의 데이터를 불러오는 데 실패했습니다: ${(resultTwo.reason as Error).message}` },
+        };
         
-        try {
-            const cachedData = sessionStorage.getItem(cacheKey);
-            if (cachedData) {
-                const parsedData = JSON.parse(cachedData);
-                const cacheTime = parsedData.timestamp || 0;
-                
-                // 캐시가 1시간 이내면 사용 (30분에서 1시간으로 연장)
-                if (Date.now() - cacheTime < 60 * 60 * 1000) {
-                    cachedResult = parsedData.data;
-                    useCache = true;
-                }
-            }
-        } catch (e) {
-            console.warn('캐시 데이터 파싱 오류:', e);
-            // 캐시 파싱 오류 시 무시하고 계속 진행
-        }
-        
-        if (useCache && cachedResult) {
-            setComparisonData(cachedResult);
-            setComparisonLoading(false);
-            return;
-        }
-        
-        // 사용자 데이터 요청 (최소한의 API 호출만 수행)
-        try {
-            // 첫 번째 사용자 기본 정보만 먼저 요청
-            const userData1 = await getUser(user1);
-            
-            // 두 번째 사용자 기본 정보만 먼저 요청
-            const userData2 = await getUser(user2);
-            
-            // 기본 사용자 정보로 초기 데이터 설정
-            const initialData: ComparisonResult = {
-                userOne: { user: userData1, repos: [] },
-                userTwo: { user: userData2, repos: [] }
-            };
-            
-            // 초기 데이터 표시 (사용자에게 빠른 피드백 제공)
-            setComparisonData(initialData);
-            
-            // 각 사용자의 저장소 정보는 비동기적으로 요청
-            const fetchRepos = async () => {
-                try {
-                    // 첫 번째 사용자 저장소 요청
-                    const repos1 = await getRepos(user1);
-                    
-                    // 중간 업데이트 (첫 번째 사용자 저장소 정보 추가)
-                    setComparisonData(prevData => {
-                        if (!prevData) return prevData;
-                        return {
-                            ...prevData,
-                            userOne: { 
-                                ...prevData.userOne, 
-                                user: userData1, 
-                                repos: repos1 
-                            }
-                        };
-                    });
-                    
-                    // 두 번째 사용자 저장소 요청
-                    const repos2 = await getRepos(user2);
-                    
-                    // 최종 데이터 업데이트
-                    const finalData: ComparisonResult = {
-                        userOne: { user: userData1, repos: repos1 },
-                        userTwo: { user: userData2, repos: repos2 }
-                    };
-                    
-                    setComparisonData(finalData);
-                    
-                    // 결과 캐싱
-                    try {
-                        sessionStorage.setItem(cacheKey, JSON.stringify({
-                            data: finalData,
-                            timestamp: Date.now()
-                        }));
-                    } catch (e) {
-                        console.warn('비교 결과 캐싱 실패:', e);
-                    }
-                } catch (repoError) {
-                    console.error('저장소 데이터 가져오기 오류:', repoError);
-                    // 저장소 데이터 가져오기 실패해도 사용자 기본 정보는 유지
-                }
-            };
-            
-            // 저장소 정보 비동기적으로 가져오기
-            fetchRepos();
-            
-        } catch (error) {
-            console.error('사용자 비교 중 오류 발생:', error);
-            
-            // 에러 발생 시에도 가능한 데이터는 표시
-            const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
-            
-            setComparisonData({
-                userOne: { error: `사용자 데이터를 불러오는 데 실패했습니다: ${errorMessage}` },
-                userTwo: { error: `사용자 데이터를 불러오는 데 실패했습니다: ${errorMessage}` }
-            });
-        } finally {
+        setComparisonData(data);
         setComparisonLoading(false);
-        }
     }, []);
     
     // URL 파라미터가 변경되면 자동으로 비교 실행
@@ -2137,9 +2002,7 @@ const UserComparisonPage: React.FC<{ onOpenTokenModal?: () => void }> = ({ onOpe
                     </h1>
                 </header>
                 
-
-
-
+                {onOpenTokenModal && <Navigation onOpenTokenModal={onOpenTokenModal} />}
 
                 <div className="mb-6">
                     <form onSubmit={handleComparisonSearch} className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center gap-4 justify-center">
@@ -2219,7 +2082,13 @@ export default function App() {
                     console.log('앱 시작 시 토큰 설정이 완료되었습니다.');
                 } else {
                     console.log('저장된 GitHub 토큰이 없습니다. API 호출은 시간당 60회로 제한됩니다.');
-                    // 팝업 대신 네비게이션 버튼으로 대체
+                    
+                    // 토큰 설정이 필요함을 알리는 토스트 메시지 표시 로직을 여기에 추가할 수 있음
+                    setTimeout(() => {
+                        if (confirm('GitHub API 요청 한도를 높이기 위해 개인 액세스 토큰을 설정하시겠습니까? (시간당 5,000회 요청 가능)')) {
+                            setIsTokenModalOpen(true);
+                        }
+                    }, 3000); // 3초 후 표시
                 }
             } catch (error) {
                 console.error('토큰 설정 중 오류 발생:', error);
@@ -2315,7 +2184,6 @@ export default function App() {
                     onClose={() => setIsTokenModalOpen(false)} 
                     onSave={handleSaveToken} 
                 />
-                <Navigation onOpenTokenModal={() => setIsTokenModalOpen(true)} />
                 {React.cloneElement(children as React.ReactElement, { 
                     onOpenTokenModal: () => setIsTokenModalOpen(true) 
                 })}
@@ -2339,15 +2207,15 @@ export default function App() {
     return (
         <BrowserRouter>
             <AppLayout>
-            <Routes>
+                <Routes>
                     <Route path="/" element={<EnhancedHomePage />} />
                     <Route path="/compare" element={<EnhancedUserComparisonPage />} />
                     <Route path="/compare/:username1/:username2" element={<EnhancedUserComparisonPage />} />
                     <Route path="/:username" element={<EnhancedUserDashboardPage />} />
                     <Route path="/:username/:tab" element={<EnhancedUserDashboardPage />} />
-                {/* Catch-all route for 404 errors */}
-                <Route path="*" element={<NotFoundPage />} />
-            </Routes>
+                    {/* Catch-all route for 404 errors */}
+                    <Route path="*" element={<NotFoundPage />} />
+                </Routes>
             </AppLayout>
         </BrowserRouter>
     );

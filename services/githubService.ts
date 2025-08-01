@@ -1,5 +1,5 @@
 
-import type { GitHubUser, GitHubRepo, GitHubProject, GitHubCommit, GitHubContributor, GitHubFollower, GitHubFollowing, ContributionStats } from '../types';
+import type { GitHubUser, GitHubRepo, GitHubProject, GitHubCommit, GitHubContributor, GitHubFollower, GitHubFollowing } from '../types';
 
 // 프록시 서버를 통해 GitHub API 호출
 const API_BASE_URL = '/api/github';
@@ -77,43 +77,18 @@ export const setGitHubToken = (token: string) => {
 // Simple in-memory cache for API promises
 const cache = new Map<string, Promise<any>>();
 
-// 캐시 만료 시간 (밀리초)
-const CACHE_EXPIRY = 30 * 60 * 1000; // 30분
-
-// 캐시 정리 함수 - 오래된 캐시 항목 제거
-const cleanupCache = () => {
-  const now = Date.now();
-  const cacheEntries = Array.from(cache.entries());
-  
-  // 만료된 캐시 항목 제거
-  for (const [key, promise] of cacheEntries) {
-    // 프로미스가 이미 해결되었고 30분 이상 경과한 항목 제거
-    promise.then(
-      result => {
-        if (result && result._timestamp && now - result._timestamp > CACHE_EXPIRY) {
-          cache.delete(key);
-        }
-      },
-      () => cache.delete(key) // 에러가 발생한 프로미스는 항상 제거
-    ).catch(() => {});
-  }
-};
-
-// 주기적으로 캐시 정리 (5분마다)
-setInterval(cleanupCache, 5 * 60 * 1000);
-
 // API 요청 대기열과 속도 제한 관리를 위한 변수들
 let requestQueue: (() => void)[] = [];
 let isProcessingQueue = false;
-const REQUEST_DELAY = 1000; // GitHub API 요청 간 지연 시간 증가 (API 속도 제한 오류 방지)
+const REQUEST_DELAY = 2000; // GitHub API 요청 간 지연 시간 (밀리초)
 let remainingRequests = 60; // GitHub API 기본 제한 값
 let resetTime = Date.now() + 3600000; // 기본 리셋 시간 (1시간)
 
 // 403 오류 관련 변수
 let forbiddenErrorCount = 0;
-const MAX_FORBIDDEN_ERRORS = 3; // 최대 허용 오류 횟수 감소
+const MAX_FORBIDDEN_ERRORS = 5;
 let lastForbiddenErrorTime = 0;
-const FORBIDDEN_COOLDOWN = 60000; // 60초 동안 API 요청 중단 (오류 방지를 위해 증가)
+const FORBIDDEN_COOLDOWN = 60000; // 1분 동안 API 요청 중단
 
 /**
  * API 요청 대기열을 처리하는 함수
@@ -147,20 +122,20 @@ const processQueue = async () => {
     forbiddenErrorCount = 0;
   }
   
-  // 남은 요청 수나 Forbidden 에러 횟수에 따라 지연 시간 동적 조정 (안정성 강화)
+  // 남은 요청 수나 Forbidden 에러 횟수에 따라 지연 시간 동적 조정
   let delay = REQUEST_DELAY;
   
   if (remainingRequests <= 5) {
-    delay = REQUEST_DELAY * 4; // 매우 적은 요청 남음 (API 속도 제한 방지를 위해 증가)
+    delay = REQUEST_DELAY * 4; // 매우 적은 요청 남음
   } else if (remainingRequests <= 15) {
-    delay = REQUEST_DELAY * 2; // 적은 요청 남음 (API 속도 제한 방지를 위해 증가)
+    delay = REQUEST_DELAY * 2; // 적은 요청 남음
   }
   
   if (forbiddenErrorCount > 0) {
-    delay += forbiddenErrorCount * 2000; // Forbidden 에러 횟수에 따라 지연 시간 증가 (안정성 강화)
+    delay += forbiddenErrorCount * 1000; // Forbidden 에러 횟수에 따라 지연 시간 증가
   }
-
-  // 디버그 로그 제거로 성능 향상
+  
+  console.log(`API 요청 지연 시간: ${delay}ms, 남은 요청 수: ${remainingRequests}, Forbidden 에러 횟수: ${forbiddenErrorCount}`);
   
   while (requestQueue.length > 0) {
     const request = requestQueue.shift();
@@ -199,27 +174,30 @@ const cachedRequest = (url: string, options?: RequestInit): Promise<any> => {
         });
       }
       
-      // Forbidden 오류는 더 긴 지연 후 재시도 (API 속도 제한 오류 방지)
+      // Forbidden 오류는 더 긴 지연 후 재시도
       if (error.message && error.message.includes('Forbidden')) {
         console.warn('Forbidden 오류 발생, 30초 후 재시도합니다.');
         return new Promise(resolve => setTimeout(() => resolve(cachedRequest(url, options)), 30000));
       }
       
-      // 일반 오류는 적절한 지연 후 재시도 (안정성 강화)
-      return new Promise(resolve => setTimeout(() => resolve(cachedRequest(url, options)), 5000));
+      // 일반 오류는 짧은 지연 후 재시도
+      return new Promise(resolve => setTimeout(() => resolve(cachedRequest(url, options)), 2000));
     });
   }
 
   return new Promise((resolve, reject) => {
     const executeRequest = () => {
       // 요청 전에 사용자 에이전트 헤더와 캐시 방지 헤더 추가
-      const enhancedOptions = {
+      const timestamp = new Date().getTime();
+                            const enhancedOptions = {
                         ...options,
                         headers: {
                           ...options?.headers,
                           'User-Agent': 'GitHub-Dashboard-App/1.0',
                           'Accept': 'application/vnd.github.v3+json',
                           'Cache-Control': 'no-cache',
+                          'X-GitHub-Api-Version': '2022-11-28',
+                          'X-Request-ID': `github-dashboard-${timestamp}-${Math.floor(Math.random() * 1000)}`,
                           // 토큰이 있는 경우에만 Authorization 헤더 추가
                           ...(GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {})
                         }
@@ -243,15 +221,17 @@ const cachedRequest = (url: string, options?: RequestInit): Promise<any> => {
           // GitHub API 속도 제한 정보 추출
           const rateLimitRemaining = response.headers.get('X-RateLimit-Remaining');
           const rateLimitReset = response.headers.get('X-RateLimit-Reset');
+          const rateLimitLimit = response.headers.get('X-RateLimit-Limit');
           
           if (rateLimitRemaining) {
             remainingRequests = parseInt(rateLimitRemaining, 10);
-            // 로그 제거로 성능 향상
+            console.log(`남은 API 요청 수: ${remainingRequests}/${rateLimitLimit || '?'}`);
           }
           
           if (rateLimitReset) {
             resetTime = parseInt(rateLimitReset, 10) * 1000;
-            // 로그 제거로 성능 향상
+            const resetDate = new Date(resetTime);
+            console.log(`API 리셋 시간: ${resetDate.toLocaleTimeString()}`);
           }
           
           if (response.status === 204) { // No Content
@@ -279,11 +259,9 @@ const cachedRequest = (url: string, options?: RequestInit): Promise<any> => {
               console.log('응답 헤더:', [...response.headers.entries()]);
               
               const retryAfter = response.headers.get('Retry-After');
-              // 기본 지연 시간 증가 (API 속도 제한 오류 방지)
-              let retryDelay = forbiddenErrorCount * 10000; 
+              let retryDelay = forbiddenErrorCount * 10000; // 기본 지연 시간 (10초 * 에러 횟수)
               
               if (retryAfter) {
-                // 서버 요청 지연 시간 그대로 사용 (안정성 강화)
                 retryDelay = parseInt(retryAfter, 10) * 1000;
                 console.log(`서버에서 요청한 재시도 지연 시간: ${retryDelay}ms`);
               }
@@ -319,13 +297,6 @@ const cachedRequest = (url: string, options?: RequestInit): Promise<any> => {
           return response.json();
         })
         .then(data => {
-          // 캐시 만료 시간 추가
-          if (data && typeof data === 'object') {
-            Object.defineProperty(data, '_timestamp', {
-              value: Date.now(),
-              enumerable: false
-            });
-          }
           resolve(data);
         })
         .catch(error => {
@@ -345,9 +316,9 @@ const cachedRequest = (url: string, options?: RequestInit): Promise<any> => {
             return;
           }
           
-          // Forbidden 오류인 경우 더 긴 지연 후 재시도 (API 속도 제한 오류 방지)
+          // Forbidden 오류인 경우 더 긴 지연 후 재시도
           if (error.message && error.message.includes('Forbidden')) {
-            const retryDelay = (error as any).retryDelay || 30000; // 안정성을 위해 30초로 설정
+            const retryDelay = (error as any).retryDelay || 30000;
             console.warn(`Forbidden 오류, ${Math.ceil(retryDelay / 1000)}초 후 자동 재시도합니다.`);
             
             setTimeout(() => {
@@ -421,25 +392,8 @@ export const getContributors = async (fullName: string): Promise<GitHubContribut
   return cachedRequest(`${API_BASE_URL}/repos/${fullName}/contributors`);
 };
 
-// 사용자의 팔로워 목록을 페이징 처리하여 가져오는 함수 (성능 최적화)
+// 사용자의 팔로워 목록을 페이징 처리하여 가져오는 함수
 export const getFollowers = async (username: string, limit: number = 100): Promise<GitHubFollower[]> => {
-  // 캐시 키 (사용자명과 제한으로 구성)
-  const cacheKey = `followers_${username}_${limit}`;
-  
-  // 세션 스토리지에서 캐시된 데이터 확인
-  const cachedData = sessionStorage.getItem(cacheKey);
-  if (cachedData) {
-    try {
-      const { data, timestamp } = JSON.parse(cachedData);
-      // 캐시가 15분 이내라면 사용
-      if (Date.now() - timestamp < 15 * 60 * 1000) {
-        return data;
-      }
-    } catch (e) {
-      // 캐시 파싱 오류 무시
-    }
-  }
-  
   let page = 1;
   const per_page = 100;  // GitHub API 최대 제한
   let allFollowers: GitHubFollower[] = [];
@@ -468,16 +422,6 @@ export const getFollowers = async (username: string, limit: number = 100): Promi
       }
     }
     
-    // 결과 세션 스토리지에 캐싱
-    try {
-      sessionStorage.setItem(cacheKey, JSON.stringify({
-        data: allFollowers,
-        timestamp: Date.now()
-      }));
-    } catch (e) {
-      // 스토리지 오류 무시
-    }
-    
     return allFollowers;
   } catch (error) {
     console.error('팔로워 가져오기 오류:', error);
@@ -485,25 +429,8 @@ export const getFollowers = async (username: string, limit: number = 100): Promi
   }
 };
 
-// 사용자가 팔로우하는 사용자 목록을 페이징 처리하여 가져오는 함수 (성능 최적화)
+// 사용자가 팔로우하는 사용자 목록을 페이징 처리하여 가져오는 함수
 export const getFollowing = async (username: string, limit: number = 100): Promise<GitHubFollowing[]> => {
-  // 캐시 키 (사용자명과 제한으로 구성)
-  const cacheKey = `following_${username}_${limit}`;
-  
-  // 세션 스토리지에서 캐시된 데이터 확인
-  const cachedData = sessionStorage.getItem(cacheKey);
-  if (cachedData) {
-    try {
-      const { data, timestamp } = JSON.parse(cachedData);
-      // 캐시가 15분 이내라면 사용
-      if (Date.now() - timestamp < 15 * 60 * 1000) {
-        return data;
-      }
-    } catch (e) {
-      // 캐시 파싱 오류 무시
-    }
-  }
-  
   let page = 1;
   const per_page = 100;  // GitHub API 최대 제한
   let allFollowing: GitHubFollowing[] = [];
@@ -532,16 +459,6 @@ export const getFollowing = async (username: string, limit: number = 100): Promi
       }
     }
     
-    // 결과 세션 스토리지에 캐싱
-    try {
-      sessionStorage.setItem(cacheKey, JSON.stringify({
-        data: allFollowing,
-        timestamp: Date.now()
-      }));
-    } catch (e) {
-      // 스토리지 오류 무시
-    }
-    
     return allFollowing;
   } catch (error) {
     console.error('팔로잉 가져오기 오류:', error);
@@ -553,7 +470,7 @@ export const getFollowing = async (username: string, limit: number = 100): Promi
  * 사용자의 기여 활동 통계를 가져옵니다.
  * 현재는 GitHub API가 직접적으로 기여 데이터를 제공하지 않아 모의 데이터를 생성합니다.
  */
-export const getContributionStats = async (_username: string): Promise<ContributionStats> => {
+export const getContributionStats = async (username: string): Promise<ContributionStats> => {
   try {
     // 실제로는 GitHub API가 이 데이터를 직접 제공하지 않으므로 모의 데이터 생성
     // 실제 구현에서는 GitHub 프로필 페이지에서 SVG를 스크래핑하거나 다른 서비스를 사용해야 함
