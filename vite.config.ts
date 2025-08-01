@@ -12,20 +12,6 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      },
-      server: {
-        proxy: {
-          // GitHub API 프록시 설정
-          '/api/github': {
-            target: 'https://api.github.com',
-            changeOrigin: true,
-            rewrite: (path) => path.replace(/^\/api\/github/, ''),
-            headers: {
-              'User-Agent': 'GitHub-Dashboard-App/1.0',
-              'Accept': 'application/vnd.github.v3+json'
-            }
-          }
-        }
       }
     };
 });

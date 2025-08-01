@@ -99,19 +99,3 @@ export interface GitHubFollowing {
   type: string;
   site_admin: boolean;
 }
-
-export interface ContributionDay {
-  date: string; // YYYY-MM-DD 형식
-  count: number; // 해당 날짜의 기여 수
-  level: number; // 기여 수준 (0-4)
-}
-
-export interface ContributionStats {
-  totalContributions: number;
-  weeks: {
-    startDate: string;
-    days: ContributionDay[];
-  }[];
-  longestStreak: number;
-  currentStreak: number;
-}
