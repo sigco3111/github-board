@@ -1,5 +1,5 @@
 
-import type { GitHubUser, GitHubRepo, GitHubProject, GitHubCommit, GitHubContributor, GitHubFollower, GitHubFollowing } from '../types';
+import type { GitHubUser, GitHubRepo, GitHubProject, GitHubCommit, GitHubContributor, GitHubFollower, GitHubFollowing, ContributionStats } from '../types';
 
 // 프록시 서버를 통해 GitHub API 호출
 const API_BASE_URL = '/api/github';
@@ -213,16 +213,13 @@ const cachedRequest = (url: string, options?: RequestInit): Promise<any> => {
   return new Promise((resolve, reject) => {
     const executeRequest = () => {
       // 요청 전에 사용자 에이전트 헤더와 캐시 방지 헤더 추가
-      const timestamp = new Date().getTime();
-                            const enhancedOptions = {
+      const enhancedOptions = {
                         ...options,
                         headers: {
                           ...options?.headers,
                           'User-Agent': 'GitHub-Dashboard-App/1.0',
                           'Accept': 'application/vnd.github.v3+json',
                           'Cache-Control': 'no-cache',
-                          'X-GitHub-Api-Version': '2022-11-28',
-                          'X-Request-ID': `github-dashboard-${timestamp}-${Math.floor(Math.random() * 1000)}`,
                           // 토큰이 있는 경우에만 Authorization 헤더 추가
                           ...(GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {})
                         }
@@ -556,7 +553,7 @@ export const getFollowing = async (username: string, limit: number = 100): Promi
  * 사용자의 기여 활동 통계를 가져옵니다.
  * 현재는 GitHub API가 직접적으로 기여 데이터를 제공하지 않아 모의 데이터를 생성합니다.
  */
-export const getContributionStats = async (username: string): Promise<ContributionStats> => {
+export const getContributionStats = async (_username: string): Promise<ContributionStats> => {
   try {
     // 실제로는 GitHub API가 이 데이터를 직접 제공하지 않으므로 모의 데이터 생성
     // 실제 구현에서는 GitHub 프로필 페이지에서 SVG를 스크래핑하거나 다른 서비스를 사용해야 함
