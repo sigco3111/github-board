@@ -81,3 +81,21 @@ export interface GitHubContributor {
   html_url: string;
   contributions: number;
 }
+
+export interface GitHubFollower {
+  id: number;
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  type: string;
+  site_admin: boolean;
+}
+
+export interface GitHubFollowing {
+  id: number;
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  type: string;
+  site_admin: boolean;
+}
