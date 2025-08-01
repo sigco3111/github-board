@@ -30,7 +30,7 @@ const userDataCache = new Map<string, {
   timestamp: number;
 }>();
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes (기존 5분에서 15분으로 증가)
 
 export const useUserData = (username: string): UseUserDataResult => {
   const [user, setUser] = useState<GitHubUser | null>(null);
