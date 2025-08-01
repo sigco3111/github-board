@@ -3,6 +3,200 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useUserData } from '../hooks/useUserData';
 import { usePageTitle } from '../hooks/usePageTitle';
 import type { GitHubRepo } from '../types';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+
+// 언어 차트 컴포넌트
+const LanguageChart: React.FC<{ repos: GitHubRepo[] }> = React.memo(({ repos }) => {
+  const data = useMemo(() => {
+    const languageMap: Record<string, number> = {};
+    repos.forEach(repo => {
+      if (repo.language) {
+        languageMap[repo.language] = (languageMap[repo.language] || 0) + 1;
+      }
+    });
+
+    const colors = [
+      '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+      '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#8B5CF6'
+    ];
+
+    return Object.entries(languageMap)
+      .map(([name, count], index) => ({
+        name,
+        value: count,
+        fill: colors[index % colors.length]
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+  }, [repos]);
+
+  if (data.length === 0) {
+    return <div className="text-center text-gray-400 py-10">표시할 언어 데이터가 없습니다.</div>;
+  }
+
+  return (
+    <div className="w-full h-80">
+      <ResponsiveContainer>
+        <PieChart>
+          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+            if (!percent || percent === 0 || midAngle === undefined) return null;
+            const radius = innerRadius + (outerRadius - innerRadius) * 1.3;
+            const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+            const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+            return (
+              <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="12">
+                {`${(percent * 100).toFixed(0)}%`}
+              </text>
+            );
+          }}>
+            {data.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+          </Pie>
+          <Tooltip 
+            contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem', color: '#FFFFFF' }} 
+            itemStyle={{ color: '#F3F4F6' }}
+          />
+          <Legend wrapperStyle={{fontSize: "12px"}}/>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+});
+
+// 인기 저장소 차트 컴포넌트
+const TopReposChart: React.FC<{ repos: GitHubRepo[] }> = React.memo(({ repos }) => {
+  const chartData = useMemo(() => {
+    return repos
+      .sort((a, b) => b.stargazers_count - a.stargazers_count)
+      .slice(0, 5)
+      .map(repo => ({
+        name: repo.name.length > 15 ? `${repo.name.substring(0, 12)}...` : repo.name,
+        "별": repo.stargazers_count,
+        "포크": repo.forks_count,
+        "이슈": repo.open_issues_count || 0
+      }));
+  }, [repos]);
+
+  if (chartData.length === 0) {
+    return <div className="text-center text-gray-400 py-10">차트를 표시할 저장소가 없습니다.</div>;
+  }
+
+  return (
+    <div className="w-full h-80">
+      <ResponsiveContainer>
+        <BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#D1D5DB' }} interval={0} />
+          <YAxis tick={{ fontSize: 12, fill: '#D1D5DB' }} />
+          <Tooltip
+            contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem' }}
+            labelStyle={{ color: '#F3F4F6', fontWeight: 'bold' }}
+            itemStyle={{ color: '#E5E7EB' }}
+            cursor={{ fill: 'rgba(14, 165, 233, 0.1)' }}
+          />
+          <Legend wrapperStyle={{ fontSize: "12px" }} />
+          <Bar dataKey="별" fill="#FBBF24" />
+          <Bar dataKey="포크" fill="#38BDF8" />
+          <Bar dataKey="이슈" fill="#F472B6" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+});
+
+// 저장소 크기 분포 차트 컴포넌트
+const RepoSizeChart: React.FC<{ repos: GitHubRepo[] }> = React.memo(({ repos }) => {
+  const chartData = useMemo(() => {
+    return repos
+      .slice(0, 10)
+      .map(repo => ({
+        name: repo.name.length > 15 ? `${repo.name.substring(0, 12)}...` : repo.name,
+        size: repo.size
+      }));
+  }, [repos]);
+
+  if (chartData.length === 0) {
+    return <div className="text-center text-gray-400 py-10">차트를 표시할 저장소가 없습니다.</div>;
+  }
+
+  return (
+    <div className="w-full h-80">
+      <ResponsiveContainer>
+        <BarChart
+          data={chartData}
+          margin={{ top: 10, right: 10, left: 10, bottom: 40 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fill: '#9CA3AF', fontSize: 10 }}
+            angle={-45}
+            textAnchor="end"
+            interval={0}
+          />
+          <YAxis 
+            tick={{ fill: '#9CA3AF' }}
+            tickFormatter={(value) => `${Math.round(value/1024)}KB`}
+          />
+          <Tooltip 
+            contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem' }}
+            formatter={(value: any) => [`${Math.round(value/1024)}KB`, '크기']}
+            labelStyle={{ color: '#F3F4F6' }}
+          />
+          <Bar 
+            dataKey="size" 
+            fill="#10B981" 
+            radius={[4, 4, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+});
+
+// 포크 & 스타 비교 차트 컴포넌트
+const ForksStarsChart: React.FC<{ repos: GitHubRepo[] }> = React.memo(({ repos }) => {
+  const chartData = useMemo(() => {
+    return repos
+      .sort((a, b) => (b.stargazers_count + b.forks_count) - (a.stargazers_count + a.forks_count))
+      .slice(0, 5)
+      .map(repo => ({
+        name: repo.name.length > 15 ? `${repo.name.substring(0, 12)}...` : repo.name,
+        stars: repo.stargazers_count,
+        forks: repo.forks_count
+      }));
+  }, [repos]);
+
+  if (chartData.length === 0) {
+    return <div className="text-center text-gray-400 py-10">차트를 표시할 저장소가 없습니다.</div>;
+  }
+
+  return (
+    <div className="w-full h-80">
+      <ResponsiveContainer>
+        <BarChart
+          data={chartData}
+          margin={{ top: 10, right: 10, left: 10, bottom: 40 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <XAxis 
+            dataKey="name" 
+            tick={{ fill: '#9CA3AF', fontSize: 10 }}
+            angle={-45}
+            textAnchor="end"
+          />
+          <YAxis tick={{ fill: '#9CA3AF' }} />
+          <Tooltip 
+            contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem' }}
+            itemStyle={{ color: '#F3F4F6' }}
+          />
+          <Legend />
+          <Bar dataKey="stars" name="스타" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="forks" name="포크" fill="#EC4899" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+});
 
 // Utility function to validate GitHub username format
 const isValidGitHubUsername = (username: string): boolean => {
@@ -16,7 +210,7 @@ const isValidGitHubUsername = (username: string): boolean => {
 
 // This is a demonstration component showing how useUserData would be used
 // in the UserDashboardPage component as specified in the design
-const UserDashboardPage: React.FC = () => {
+const UserDashboardPage: React.FC<{ onOpenTokenModal?: () => void }> = ({ onOpenTokenModal }) => {
   const { username, tab } = useParams<{ username: string; tab?: string }>();
   const navigate = useNavigate();
   
@@ -216,54 +410,167 @@ const UserDashboardPage: React.FC = () => {
   }
 
   if (error) {
-    // Check if it's a "user not found" error
+    // 오류 타입 확인
     const isUserNotFound = error.includes('찾을 수 없습니다') || error.includes('Not Found');
+    const isRateLimitError = error.includes('rate limit exceeded');
+    const isForbiddenError = error.includes('Forbidden') || error.includes('403');
     
     return (
       <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-6xl mb-4">
-            {isUserNotFound ? '🔍' : '❌'}
-          </div>
-          <h2 className="text-2xl font-bold text-red-400 mb-4">
-            {isUserNotFound ? '사용자를 찾을 수 없습니다' : '오류가 발생했습니다'}
-          </h2>
-          <p className="text-gray-400 mb-2">{error}</p>
-          
-          {isUserNotFound && (
-            <div className="bg-gray-800/50 p-4 rounded-lg mb-6 text-left">
-              <p className="text-sm text-gray-300 mb-2">다음을 확인해보세요:</p>
-              <ul className="text-sm text-gray-400 space-y-1">
-                <li>• 사용자명의 철자가 정확한지 확인</li>
-                <li>• GitHub에서 해당 사용자가 존재하는지 확인</li>
-                <li>• 대소문자를 정확히 입력했는지 확인</li>
-              </ul>
-            </div>
+          {isRateLimitError ? (
+            // API 속도 제한 오류 UI
+            <>
+              <div className="text-6xl mb-4">⏱️</div>
+              <h2 className="text-2xl font-bold text-amber-400 mb-4">
+                API 속도 제한 도달
+              </h2>
+              <p className="text-gray-300 mb-4">
+                GitHub API 호출 제한에 도달했습니다. 이는 단시간 내에 너무 많은 요청을 보냈기 때문입니다.
+              </p>
+              <div className="bg-gray-800/50 p-4 rounded-lg mb-6 text-left">
+                <p className="text-sm text-gray-300 mb-2">GitHub API 속도 제한 정보:</p>
+                <ul className="text-sm text-gray-400 space-y-1">
+                  <li>• 인증되지 않은 요청: 시간당 60회</li>
+                  <li>• 인증된 요청: 시간당 5,000회</li>
+                  <li>• 시스템이 자동으로 요청을 관리하여 데이터를 로드할 것입니다.</li>
+                </ul>
+              </div>
+              <div className="flex flex-col gap-3 mt-6">
+                <div className="flex items-center justify-center gap-2 text-amber-400 mb-2">
+                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm">자동 재시도 중...</span>
+                </div>
+                <button
+                  onClick={refetch}
+                  className="w-full px-4 py-2 bg-amber-600/70 text-white rounded-md hover:bg-amber-600 transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>🔄</span>
+                  수동으로 다시 시도
+                </button>
+                <Link
+                  to="/"
+                  className="block w-full px-4 py-2 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition-colors text-center"
+                >
+                  홈으로 돌아가기
+                </Link>
+              </div>
+            </>
+          ) : isForbiddenError ? (
+            // 403 Forbidden 오류 UI
+            <>
+              <div className="text-6xl mb-4">🔒</div>
+              <h2 className="text-2xl font-bold text-purple-400 mb-4">
+                접근이 거부되었습니다
+              </h2>
+              <p className="text-gray-300 mb-4">
+                GitHub API에서 접근을 거부했습니다 (403 Forbidden). 이는 일시적인 현상일 수 있습니다.
+              </p>
+              <div className="bg-gray-800/50 p-4 rounded-lg mb-6 text-left">
+                <p className="text-sm text-gray-300 mb-2">가능한 원인:</p>
+                <ul className="text-sm text-gray-400 space-y-1">
+                  <li>• IP 주소가 일시적으로 차단됨</li>
+                  <li>• 인증 토큰이 만료되거나 유효하지 않음</li>
+                  <li>• GitHub 서버 측 문제</li>
+                  <li>• 요청 헤더가 올바르지 않음</li>
+                  <li>• 짧은 시간 내에 너무 많은 요청 발생</li>
+                </ul>
+              </div>
+              
+              <div className="bg-indigo-900/30 p-4 rounded-lg mb-6 border border-indigo-800/50">
+                <p className="text-sm text-indigo-200 font-medium mb-2">해결 방법:</p>
+                <ul className="text-sm text-indigo-300/80 space-y-2">
+                  <li className="flex items-start">
+                    <span className="mr-2">1.</span>
+                    <span>시스템이 자동으로 재시도 중입니다. 잠시 기다려주세요.</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">2.</span>
+                    <span>브라우저 새로고침을 시도해보세요.</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">3.</span>
+                    <span>잠시 후 다시 시도하거나 다른 사용자를 검색해보세요.</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="mr-2">4.</span>
+                    <span>GitHub API는 인증되지 않은 요청에 대해 시간당 60회로 제한됩니다.</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="flex flex-col gap-3 mt-6">
+                <div className="flex items-center justify-center gap-2 text-purple-400 mb-2">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm">자동 재시도 중...</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      // 즉시 재시도
+                      refetch();
+                    }}
+                    className="px-4 py-2 bg-purple-600/70 text-white rounded-md hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>🔄</span>
+                    즉시 재시도
+                  </button>
+                  <Link
+                    to="/"
+                    className="block px-4 py-2 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition-colors text-center"
+                  >
+                    홈으로 돌아가기
+                  </Link>
+                </div>
+              </div>
+            </>
+          ) : (
+            // 일반 오류 또는 사용자를 찾을 수 없는 경우 UI
+            <>
+              <div className="text-6xl mb-4">
+                {isUserNotFound ? '🔍' : '❌'}
+              </div>
+              <h2 className="text-2xl font-bold text-red-400 mb-4">
+                {isUserNotFound ? '사용자를 찾을 수 없습니다' : '오류가 발생했습니다'}
+              </h2>
+              <p className="text-gray-400 mb-2">{error}</p>
+              
+              {isUserNotFound && (
+                <div className="bg-gray-800/50 p-4 rounded-lg mb-6 text-left">
+                  <p className="text-sm text-gray-300 mb-2">다음을 확인해보세요:</p>
+                  <ul className="text-sm text-gray-400 space-y-1">
+                    <li>• 사용자명의 철자가 정확한지 확인</li>
+                    <li>• GitHub에서 해당 사용자가 존재하는지 확인</li>
+                    <li>• 대소문자를 정확히 입력했는지 확인</li>
+                  </ul>
+                </div>
+              )}
+              
+              <div className="space-y-3">
+                <button
+                  onClick={refetch}
+                  className="w-full px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>🔄</span>
+                  다시 시도
+                </button>
+                <Link
+                  to="/"
+                  className="block w-full px-4 py-2 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition-colors text-center"
+                >
+                  홈으로 돌아가기
+                </Link>
+                {isUserNotFound && (
+                  <Link
+                    to="/"
+                    className="block w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-center"
+                  >
+                    다른 사용자 검색하기
+                  </Link>
+                )}
+              </div>
+            </>
           )}
-          
-          <div className="space-y-3">
-            <button
-              onClick={refetch}
-              className="w-full px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <span>🔄</span>
-              다시 시도
-            </button>
-            <Link
-              to="/"
-              className="block w-full px-4 py-2 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition-colors text-center"
-            >
-              홈으로 돌아가기
-            </Link>
-            {isUserNotFound && (
-              <Link
-                to="/"
-                className="block w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-center"
-              >
-                다른 사용자 검색하기
-              </Link>
-            )}
-          </div>
         </div>
       </div>
     );
@@ -427,57 +734,190 @@ const UserDashboardPage: React.FC = () => {
         {/* Tab Content */}
         <div>
           {(!tab || tab === 'overview') && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">인기 저장소</h3>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {repos
-                    .sort((a, b) => b.stargazers_count - a.stargazers_count)
-                    .slice(0, 5)
-                    .map(repo => (
-                    <div 
-                      key={repo.id} 
-                      className="flex justify-between items-center p-3 bg-gray-700 rounded hover:bg-gray-600 transition-colors cursor-pointer"
-                      onClick={() => handleRepoClick(repo)}
-                      title={`${repo.name} 저장소로 이동`}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sky-400 truncate">{repo.name}</h4>
-                        <p className="text-sm text-gray-400 truncate">{repo.description}</p>
-                        {repo.language && (
-                          <span className="inline-block mt-1 text-xs text-gray-500">
-                            {repo.language}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-right text-sm text-gray-400 ml-4">
-                        <div>⭐ {repo.stargazers_count}</div>
-                        <div>🔀 {repo.forks_count}</div>
+            <div className="space-y-8">
+              {/* API 오류 알림 배너 */}
+              {error && (
+                <>
+                  {/* API 속도 제한 오류 알림 */}
+                  {error.includes('rate limit exceeded') && (
+                    <div className="bg-gradient-to-r from-amber-900/50 to-red-900/50 rounded-xl p-6 border border-amber-700/50 shadow-lg animate-fade-in">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <svg className="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        </div>
+                        <div className="ml-3 flex-1">
+                          <h3 className="text-lg font-medium text-amber-300">GitHub API 속도 제한 도달</h3>
+                          <div className="mt-2 text-sm text-amber-200">
+                            <p>GitHub API 호출 제한에 도달했습니다. 이는 단시간 내에 너무 많은 요청을 보냈기 때문입니다.</p>
+                            <p className="mt-1">시스템이 자동으로 요청을 관리하여 데이터를 로드할 것입니다. 잠시만 기다려주세요.</p>
+                          </div>
+                          <div className="mt-4">
+                            <div className="inline-flex items-center px-3 py-1.5 border border-amber-600/50 rounded-full text-xs font-medium bg-amber-900/30 text-amber-200">
+                              <svg className="mr-1.5 h-2 w-2 text-amber-400 animate-pulse" fill="currentColor" viewBox="0 0 8 8">
+                                <circle cx="4" cy="4" r="3" />
+                              </svg>
+                              요청이 대기열에 추가되었습니다
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  )}
+                  
+                  {/* 403 Forbidden 오류 알림 */}
+                  {(error.includes('Forbidden') || error.includes('403')) && !error.includes('rate limit exceeded') && (
+                    <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 rounded-xl p-6 border border-purple-700/50 shadow-lg animate-fade-in">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0">
+                          <svg className="h-6 w-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        </div>
+                        <div className="ml-3 flex-1">
+                          <h3 className="text-lg font-medium text-purple-300">접근이 거부되었습니다 (403)</h3>
+                          <div className="mt-2 text-sm text-purple-200">
+                            <p>GitHub API에서 접근을 거부했습니다. 이는 일시적인 현상일 수 있습니다.</p>
+                            <p className="mt-1">시스템이 자동으로 재시도 중입니다. 잠시만 기다려주세요.</p>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <div className="inline-flex items-center px-3 py-1.5 border border-purple-600/50 rounded-full text-xs font-medium bg-purple-900/30 text-purple-200">
+                              <svg className="mr-1.5 h-2 w-2 text-purple-400 animate-pulse" fill="currentColor" viewBox="0 0 8 8">
+                                <circle cx="4" cy="4" r="3" />
+                              </svg>
+                              자동 재시도 중
+                            </div>
+                            <div className="inline-flex items-center px-3 py-1.5 border border-indigo-600/50 rounded-full text-xs font-medium bg-indigo-900/30 text-indigo-200">
+                              <svg className="mr-1.5 h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              지연 시간 자동 증가
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {/* 기본 정보 카드 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-gray-800 rounded-lg p-6">
+                  <h3 className="text-xl font-semibold mb-4">인기 저장소</h3>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {repos
+                      .sort((a, b) => b.stargazers_count - a.stargazers_count)
+                      .slice(0, 5)
+                      .map(repo => (
+                      <div 
+                        key={repo.id} 
+                        className="flex justify-between items-center p-3 bg-gray-700 rounded hover:bg-gray-600 transition-colors cursor-pointer"
+                        onClick={() => handleRepoClick(repo)}
+                        title={`${repo.name} 저장소로 이동`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sky-400 truncate">{repo.name}</h4>
+                          <p className="text-sm text-gray-400 truncate">{repo.description}</p>
+                          {repo.language && (
+                            <span className="inline-block mt-1 text-xs text-gray-500">
+                              {repo.language}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-right text-sm text-gray-400 ml-4">
+                          <div>⭐ {repo.stargazers_count}</div>
+                          <div>🔀 {repo.forks_count}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-gray-800 rounded-lg p-6">
+                  <h3 className="text-xl font-semibold mb-4">최근 활동</h3>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {repos
+                      .sort((a, b) => new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime())
+                      .slice(0, 5)
+                      .map(repo => (
+                      <div 
+                        key={repo.id} 
+                        className="p-3 bg-gray-700 rounded hover:bg-gray-600 transition-colors cursor-pointer"
+                        onClick={() => handleRepoClick(repo)}
+                        title={`${repo.name} 저장소로 이동`}
+                      >
+                        <h4 className="font-medium text-sky-400">{repo.name}</h4>
+                        <p className="text-sm text-gray-400">
+                          업데이트: {new Date(repo.pushed_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-
-              <div className="bg-gray-800 rounded-lg p-6">
-                <h3 className="text-xl font-semibold mb-4">최근 활동</h3>
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {repos
-                    .sort((a, b) => new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime())
-                    .slice(0, 5)
-                    .map(repo => (
-                    <div 
-                      key={repo.id} 
-                      className="p-3 bg-gray-700 rounded hover:bg-gray-600 transition-colors cursor-pointer"
-                      onClick={() => handleRepoClick(repo)}
-                      title={`${repo.name} 저장소로 이동`}
-                    >
-                      <h4 className="font-medium text-sky-400">{repo.name}</h4>
-                      <p className="text-sm text-gray-400">
-                        업데이트: {new Date(repo.pushed_at).toLocaleDateString()}
-                      </p>
+              
+              {/* 차트 섹션 */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h3 className="text-2xl font-semibold mb-4 text-gray-200 flex items-center">
+                    <svg className="w-6 h-6 mr-2 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                    언어 분포
+                  </h3>
+                  <div className="bg-gray-800/80 p-6 rounded-xl shadow-lg h-[400px] flex items-center justify-center backdrop-blur-sm border border-gray-700/50">
+                    <div className="w-full h-full">
+                      <LanguageChart repos={repos} />
                     </div>
-                  ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-semibold mb-4 text-gray-200 flex items-center">
+                    <svg className="w-6 h-6 mr-2 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    인기 저장소 스탯
+                  </h3>
+                  <div className="bg-gray-800/80 p-6 rounded-xl shadow-lg h-[400px] flex items-center justify-center backdrop-blur-sm border border-gray-700/50">
+                    <div className="w-full h-full">
+                      <TopReposChart repos={repos} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 추가 시각화 차트 섹션 */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                {/* 저장소 크기 분포 차트 */}
+                <div>
+                  <h3 className="text-2xl font-semibold mb-4 text-gray-200 flex items-center">
+                    <svg className="w-6 h-6 mr-2 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    저장소 크기 분포
+                  </h3>
+                  <div className="bg-gray-800/80 p-6 rounded-xl shadow-lg h-[400px] flex items-center justify-center backdrop-blur-sm border border-gray-700/50">
+                    <div className="w-full h-full">
+                      <RepoSizeChart repos={repos} />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* 포크 & 스타 비교 차트 */}
+                <div>
+                  <h3 className="text-2xl font-semibold mb-4 text-gray-200 flex items-center">
+                    <svg className="w-6 h-6 mr-2 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    포크 & 스타 비교
+                  </h3>
+                  <div className="bg-gray-800/80 p-6 rounded-xl shadow-lg h-[400px] flex items-center justify-center backdrop-blur-sm border border-gray-700/50">
+                    <div className="w-full h-full">
+                      <ForksStarsChart repos={repos} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -499,9 +939,9 @@ const UserDashboardPage: React.FC = () => {
                     }}
                     className="flex-grow py-3 px-4 bg-gray-800 text-gray-100 focus:outline-none"
                   />
-                  <div className="bg-gray-700 px-4 flex items-center text-gray-400">
+                  <button type="button" className="bg-gray-700 px-4 flex items-center text-gray-400 whitespace-nowrap">
                     <span role="img" aria-label="Search">🔍</span>
-                  </div>
+                  </button>
                 </div>
                 {searchTerm && (
                   <div className="mt-3 text-gray-400">
@@ -757,9 +1197,9 @@ const UserDashboardPage: React.FC = () => {
                   }}
                   className="flex-grow py-2 px-3 bg-gray-700 text-gray-100 focus:outline-none"
                 />
-                <div className="bg-gray-600 px-3 flex items-center text-gray-400">
+                <button type="button" className="bg-gray-600 px-3 flex items-center text-gray-400 whitespace-nowrap">
                   <span role="img" aria-label="Search">🔍</span>
-                </div>
+                </button>
               </div>
             </div>
             
@@ -863,9 +1303,9 @@ const UserDashboardPage: React.FC = () => {
                   }}
                   className="flex-grow py-2 px-3 bg-gray-700 text-gray-100 focus:outline-none"
                 />
-                <div className="bg-gray-600 px-3 flex items-center text-gray-400">
+                <button type="button" className="bg-gray-600 px-3 flex items-center text-gray-400 whitespace-nowrap">
                   <span role="img" aria-label="Search">🔍</span>
-                </div>
+                </button>
               </div>
             </div>
             
